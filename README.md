@@ -110,4 +110,41 @@ bigquery_client.delete_dataset(dataset_ref)
 
 # Use the delete_contents parameter to delete a dataset and its tables
 client.delete_dataset(dataset_ref, delete_contents=True)
+
+```
+#### Import CSV data from Google cloud storage
+``` 
+import uuid
+
+# initialize job name
+job_name = str(uuid.uuid4())
+
+# create job
+job = bigquery_client.load_table_from_storage(job_name, table, 'gs://'+bucketName+'/'+csvfilepath)
+
+# wait for job complete
+job.begin()
+wait_for_job(job)
+
+def wait_for_job(job):
+    while True:
+        job.reload()
+        if job.state == 'DONE':
+            if job.error_result:
+                raise RuntimeError(job.errors)
+            return
+```
+
+#### Export CSV data to Google cloud storage
+
+```
+destination_uri = 'gs://{}/{}'.format(bucket_name, 'shakespeare.csv')
+dataset_ref = bigquery_client.dataset(dataset_id, project=project)
+table_ref = dataset_ref.table(table_id)
+
+extract_job = bigquery_client.extract_table(table_ref,destination_uri,
+    # Location must match that of the source table.
+    location='US')  # API request
+extract_job.result()  # Waits for job to complete.
+```
   
